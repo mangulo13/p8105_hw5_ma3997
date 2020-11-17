@@ -32,7 +32,7 @@ Read in the data.
 
 ```{r}
 homicide_df = 
-  read_csv("./data/homicide-data.csv") %>% 
+  read_csv("./data/homicide_data/homicide-data.csv") %>% 
   mutate(
     city_state = str_c(city, state, sep = "_"),
     resolved = case_when(
@@ -42,8 +42,157 @@ homicide_df =
     )
   ) %>% 
   select(city_state, resolved) %>% 
-  view
+  filter(city_state != "Tulsa_AL")
 
 ```
 
 Let's look at this a bit. 
+
+```{r}
+aggregrate_df = 
+  homicide_df %>% 
+  group_by(city_state) %>% 
+  summarize(
+    hom_total = n(),
+    hom_unsolved = sum(resolved == "unsolved")
+  ) 
+```
+
+
+Can I do a prop test for a single city?
+
+```{r}
+prop.test(
+  aggregrate_df %>% filter(city_state =="Baltimore_MD") %>% pull(hom_unsolved), 
+  aggregrate_df %>% filter(city_state =="Baltimore_MD") %>% pull(hom_total)) %>% 
+  broom::tidy()
+```
+
+R spits out statistical info in a format that's hard to extract. Broom::tidy gives that info in a nice tibble
+
+Try to iterate.....
+
+```{r}
+results_df = 
+  aggregrate_df %>% 
+  mutate(
+    prop_tests = map2(.x = hom_unsolved, .y = hom_total, ~ prop.test(x = .x, n = .y)),
+    tidy_tests = map(.x = prop_tests, ~broom::tidy(.x))
+  ) %>% 
+  select(-prop_tests) %>% 
+  unnest(tidy_tests) %>% 
+  select(city_state, estimate, conf.low, conf.high)
+```
+
+Map2 lets you map over two elements at the same time 
+
+```{r}
+results_df %>% 
+  mutate(city_state = fct_reorder(city_state, estimate)) %>% 
+  ggplot(aes(x = city_state, y = estimate))+
+  geom_point() +
+  geom_errorbar(aes(ymin = conf.low, ymax = conf.high))+
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 1))
+
+```
+
+
+```{r, error = TRUE}
+city_prop_test = function(df) {
+  
+  n_unsolved...
+  n_total...
+  prop.test(...)
+}
+
+homicide_df = 
+  read_csv("./data/homicide_data/homicide-data.csv") %>% 
+  mutate(
+    city_state = str_c(city, state, sep = "_"),
+    resolved = case_when(
+      disposition == "Closed without arrest" ~ "unsolved",
+      disposition == "Open/No arrest" ~ "unsolved",
+      disposition == "Closed by arrest" ~ "solved"
+    )
+  ) %>% 
+  select(city_state, resolved) %>% 
+  filter(city_state != "Tulsa_AL") %>% 
+  nest(data = resolved)
+
+
+```
+
+
+## Problem 2 ideas.....
+
+Import one dataset
+
+```{r}
+data_1 = read_csv("./data/lda_data/con_01.csv")
+```
+
+Start with df with all file names. Maybe list.files
+
+
+```{r, error = T}
+path_df = 
+  tibble(
+    path = list.files("data/lda_data")
+    ) %>% 
+  mutate(
+    path = str_c("data/lda_data/", path),
+    data = map(.....)
+    )
+
+read_csv(path_df$path[[1]])
+
+```
+How to reiterate this across all paths? 
+Then store in df next to path that goes with it 
+Then tidy verse things 
+Mutate or string operations for people in control of exp
+Tidy observations and time 
+think about pivoting 
+Have column for exp v con, for week, observations 
+
+## Problem 2
+
+## Problem 3 Ideas....
+
+This Q is all about simulations
+Simulate sample from norm distribution
+Samp of 30, sd of 5, and change the mean from 0:6 
+For each mean generate 5000 datasets of a samp 30 
+
+Exporting results of t test if mean is equal to zero
+
+Have to figure out on own how to do t test in R, use broom tidy to clean it up
+
+Complicated thing is two plots. 
+First plot is when estimate mean when filtered only to statistically sig
+
+Modify sim mean and stan dev function from class to export to t test instead and get p value 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
