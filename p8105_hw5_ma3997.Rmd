@@ -27,6 +27,8 @@ scale_fill_discrete = scale_fill_viridis_d
 
 ```
 
+Hello! And welcome to my solutions for Homework 5. Enjoy.
+
 ## Problem 1
 
 Read in the data. 
@@ -124,30 +126,6 @@ homicide_df =
 ```
 
 
-## Problem 2 ideas.....
-
-Import one dataset
-
-```{r}
-data_1 = read_csv("./data/lda_data/con_01.csv")
-```
-
-Start with df with all file names. Maybe list.files
-
-
-```{r, error = T}
-
-
-
-    data = map_df(path, read_csv(path_df$path))
-```
-How to reiterate this across all paths? 
-Then store in df next to path that goes with it 
-Then tidy verse things 
-Mutate or string operations for people in control of exp
-Tidy observations and time 
-think about pivoting 
-Have column for exp v con, for week, observations 
 
 ## Problem 2
 
@@ -182,22 +160,7 @@ tidy_df %>%
 
 ```
 
-
-## Problem 3 Ideas....
-
-This Q is all about simulations
-Simulate sample from norm distribution
-Samp of 30, sd of 5, and change the mean from 0:6 
-For each mean generate 5000 datasets of a samp 30 
-
-Exporting results of t test if mean is equal to zero
-
-Have to figure out on own how to do t test in R, use broom tidy to clean it up
-
-Complicated thing is two plots. 
-First plot is when estimate mean when filtered only to statistically sig
-
-Modify sim mean and stan dev function from class to export to t test instead and get p value 
+The experimental arm seems to have a positive trend over the course of the weeks while the control arm seems to generally stay the same. 
 
 
 ## Question 3
@@ -242,15 +205,19 @@ sim_df =
   ) %>% 
   mutate(estimates = output) %>% 
   unnest(estimates) %>% 
-  mutate(reject = ifelse(p.value < '0.05', 1, 0)) 
+  mutate(reject = ifelse(p.value < 0.05, 1, 0)) 
   
 
 
 plot1 = 
   sim_df %>% 
   group_by(means)%>% 
-  summarize(reject_prop = mean(reject)) %>% 
-  ggplot(aes(x = means, y = reject_prop))+
+  summarize(
+    total_tests = n(),
+    reject_tests = sum(reject)
+    ) %>% 
+  mutate(power = reject_tests/total_tests)%>% 
+  ggplot(aes(x = means, y = power))+
   geom_point()
 
 
@@ -270,14 +237,21 @@ plot3 =
   ggplot(aes(x = means, y = avg_estimate))+
   geom_point()
 
-plot1
-plot2
-plot3
 
 ```
 
+```{r}
+plot1
+```
 
+As effect sizes increase, power significantly increases. 
 
+```{r}
+plot2
+plot3
+```
+
+The sample means are approximately equal to the true mean which is as expected given the large sample size. Filtering by estimates that are statistically significant provides estimates that are also approximately equal to the true means which also makes sense since we are only viewing sample means that are not equal to zero. 
 
 
 
