@@ -6,6 +6,7 @@ output: github_document
 ```{r setup}
 library(tidyverse)
 library(rvest)
+library(ggplot2)
 
 knitr::opts_chunk$set(
   fig.width = 6,
@@ -136,34 +137,9 @@ Start with df with all file names. Maybe list.files
 
 ```{r, error = T}
 
-path_df = 
-  tibble(
-    path = list.files("data/lda_data")
-    ) %>% 
-  mutate(
-    path = str_c("data/lda_data/", path))
 
 
-output = vector("list", length = 20)
-
-for (i in 1:20) {
-  
-  output[[i]] = read_csv(path_df$path[[i]])
-  
-}
-
-data = 
-  output %>% 
-  bind_rows() %>% 
-  list()
-  
-path_df %>% 
-  mutate(
-    data = data
-  )
-
-
-    data = map(path, read_csv(path_df$path[[1]]))
+    data = map_df(path, read_csv(path_df$path))
 ```
 How to reiterate this across all paths? 
 Then store in df next to path that goes with it 
@@ -174,6 +150,38 @@ think about pivoting
 Have column for exp v con, for week, observations 
 
 ## Problem 2
+
+```{r}
+path_df = 
+  tibble(
+    path = list.files("data/lda_data")
+    ) %>% 
+  mutate(
+    subject = path,
+    path = str_c("data/lda_data/", path),
+    data = map(path, read_csv)
+    ) %>% 
+  unnest(data) 
+
+tidy_df = 
+  path_df %>% 
+  select(-path) %>% 
+  pivot_longer(
+    week_1:week_8,
+    names_to = "week",
+    names_prefix = "week_",
+    values_to = "obs"
+  ) %>% 
+  separate(subject, into = c("group", "id")) %>% 
+  view()
+
+tidy_df %>% 
+  ggplot(aes(x = week, y = obs, group = id, color = id))+
+  geom_line()+
+  facet_grid(. ~ group)
+
+```
+
 
 ## Problem 3 Ideas....
 
@@ -192,6 +200,81 @@ First plot is when estimate mean when filtered only to statistically sig
 Modify sim mean and stan dev function from class to export to t test instead and get p value 
 
 
+## Question 3
+
+```{r}
+sim_function = function( samp_size = 30, mu = 0, sigma = 5) {
+  
+  sim_df = 
+    tibble(
+      x = rnorm(n = samp_size, mean = mu, sd = sigma))
+  
+  sim_df %>% 
+    summarize(
+      mu = mean(x),
+      sigma = sd(x)
+    ) 
+  
+  sim_df %>% 
+    t.test() %>% 
+    broom::tidy() %>% 
+    select(estimate, p.value)
+  
+} 
+
+means = c(1:6)
+  
+
+
+output = vector("list", length = 6)
+
+for (i in 1:6) {
+  
+  output[[i]] = rerun(5000, sim_function(mu = means[[i]])) %>% 
+    bind_rows()
+}
+
+
+
+sim_df = 
+  tibble(
+    means = means
+  ) %>% 
+  mutate(estimates = output) %>% 
+  unnest(estimates) %>% 
+  mutate(reject = ifelse(p.value < '0.05', 1, 0)) 
+  
+
+
+plot1 = 
+  sim_df %>% 
+  group_by(means)%>% 
+  summarize(reject_prop = mean(reject)) %>% 
+  ggplot(aes(x = means, y = reject_prop))+
+  geom_point()
+
+
+
+plot2 = 
+  sim_df %>% 
+  group_by(means) %>% 
+  summarize(avg_estimate = mean(estimate)) %>% 
+  ggplot(aes(x = means, y = avg_estimate))+
+  geom_point()
+
+plot3 = 
+  sim_df %>% 
+  filter(reject == 1) %>% 
+  group_by(means) %>% 
+  summarize(avg_estimate = mean(estimate)) %>% 
+  ggplot(aes(x = means, y = avg_estimate))+
+  geom_point()
+
+plot1
+plot2
+plot3
+
+```
 
 
 
