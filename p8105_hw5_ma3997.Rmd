@@ -3,7 +3,7 @@ title: "Homework 5 "
 output: github_document
 ---
 
-```{r setup}
+```{r setup, include = FALSE}
 library(tidyverse)
 library(rvest)
 library(ggplot2)
@@ -154,7 +154,7 @@ tidy_df =
   view()
 
 tidy_df %>% 
-  ggplot(aes(x = week, y = obs, group = id, color = id))+
+  ggplot(aes(x = week, y = obs, group = id, color = id), alpha = 0.5)+
   geom_line()+
   facet_grid(. ~ group)
 
@@ -227,7 +227,8 @@ plot2 =
   group_by(means) %>% 
   summarize(avg_estimate = mean(estimate)) %>% 
   ggplot(aes(x = means, y = avg_estimate))+
-  geom_point()
+  geom_point()+
+  labs(title = "Average mean estimate versus known mean for all samples", x = "Known mean", y = "Average mean estimate")
 
 plot3 = 
   sim_df %>% 
@@ -235,7 +236,8 @@ plot3 =
   group_by(means) %>% 
   summarize(avg_estimate = mean(estimate)) %>% 
   ggplot(aes(x = means, y = avg_estimate))+
-  geom_point()
+  geom_point()+
+  labs(title = "Average mean estimate versus known mean for all statistically significant samples", x = "Known mean", y = "Average mean estimate")
 
 
 ```
